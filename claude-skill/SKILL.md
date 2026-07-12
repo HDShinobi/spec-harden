@@ -1,6 +1,6 @@
 ---
 name: spec-harden
-description: Harden a written spec via an automatic cross-model adversarial review loop — Codex (GPT, run headless via `codex exec`) is the primary critic; Claude is the author/orchestrator and runs the whole author⇄critic loop hands-free until no blocker/major remains, then promotes the hardened draft to the real spec on user confirmation. Optional `--final-verify {sonnet|opus|haiku|fable|gemini}` adds one extra cross-check pass before finalize. Use after brainstorming writes a spec, or on any existing spec document. Accepts an optional spec path, `--critic-model`, `--critic-effort`, and `--final-verify`.
+description: Harden a written spec via an automatic cross-model adversarial review loop — Codex (GPT, run headless via `codex exec`) is the primary critic; Claude is the author/orchestrator and runs the whole author⇄critic loop hands-free until no blocker/major remains, then promotes the hardened draft to the real spec on user confirmation. `--depth design` also challenges the approach/tradeoffs/alternatives (not just spec quality); optional `--final-verify {sonnet|opus|haiku|fable|gemini}` adds one extra cross-check pass before finalize. Use after brainstorming writes a spec, or on any existing spec document. Accepts an optional spec path, `--critic-model`, `--critic-effort`, `--depth`, and `--final-verify`.
 ---
 
 # spec-harden (Claude = author & orchestrator; Codex = automatic critic)
@@ -30,9 +30,11 @@ automatically.** All settings have this precedence: **CLI flag > env var > `~/.s
   it itself, so you never pass them on the loop calls. For `final_verify`, YOU read the file:
   `python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/.spec-harden.json'))).get('final_verify','off'))"`
   (treat a missing file or `off` as "no final-verify").
-- `--critic-model M` / `--critic-effort E` = one-off overrides for this run (Codex model, e.g.
-  `gpt-5.6-terra`/`gpt-5.6-sol`/`gpt-5.5`; effort `low|medium|high|xhigh`). Pass them straight
-  through to `codex_critic.py` only when the user asks for a one-off.
+- `--critic-model M` / `--critic-effort E` / `--depth {spec|design}` = one-off overrides for this
+  run (Codex model, e.g. `gpt-5.6-terra`/`gpt-5.6-sol`/`gpt-5.5`; effort `low|medium|high|xhigh`;
+  depth `spec` = spec-quality only [default], `design` = ALSO challenge the approach, tradeoffs,
+  and alternatives). Pass them straight through to `codex_critic.py`; it reads its own defaults
+  from `~/.spec-harden.json` otherwise.
 - `--final-verify T` = one-off override of the config's `final_verify`: `sonnet|opus|haiku|fable`
   (a fresh Claude subagent critic) or `gemini` (manual Antigravity handoff), or `off`.
 - Harden dir = `<spec-dir>/<spec-stem>.harden/`. `SKILL_DIR` = this skill's directory
@@ -56,7 +58,7 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
    so `finalize` promotes back to the exact file).
 4. **Loop** for round `N = 1, 2, …` up to `MAX_ROUNDS = 4`:
    1. **Codex critic turn:**
-      `python3 $SKILL_DIR/scripts/codex_critic.py <harden> N [--model M] [--effort E]`.
+      `python3 $SKILL_DIR/scripts/codex_critic.py <harden> N [--model M] [--effort E] [--depth D]`.
       It runs `codex exec` read-only over `draft.md` (+ prior `r(N-1).claude.md`) and writes a
       format-validated `<harden>/rN.codex.md`. If it exits non-zero, show its stderr and STOP
       (env/auth issue — do NOT count as a round; e.g. re-run `codex login`).

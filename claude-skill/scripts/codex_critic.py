@@ -31,6 +31,19 @@ TEMPLATE = os.path.join(SKILL_DIR, "references", "CRITIC_PROMPT.md")
 CONFIG_PATH = os.environ.get("SPEC_HARDEN_CONFIG", os.path.expanduser("~/.spec-harden.json"))
 FALLBACK_MODEL = "gpt-5.6-terra"
 FALLBACK_EFFORT = "medium"
+FALLBACK_DEPTH = "spec"          # spec = spec-quality only; design = also challenge the approach
+
+_SPEC_LENSES = "completeness|testability|ambiguity|assumptions|scope"
+_DESIGN_LENSES = _SPEC_LENSES + "|design"
+_CHALLENGE_BLOCK = """
+Additionally, apply the **design** lens — challenge the APPROACH itself, not just how it is written:
+- **design** — is this the right solution? What load-bearing assumptions does the chosen approach
+  depend on, and what happens when one is false? Where does it break under real-world conditions
+  (scale, concurrency, failure/degraded dependencies, migration, rollback)? What simpler or more
+  robust alternative was not considered, and why might it be better? Name the tradeoff being made.
+Raise a `design` finding only when you can point to a concrete way the approach fails or a concrete
+better alternative — do not raise vague "have you considered…" musings.
+"""
 
 
 def load_config():
@@ -52,6 +65,14 @@ def resolve_effort(cli):
     cfg = load_config()
     return cli or os.environ.get("SPEC_HARDEN_CRITIC_EFFORT") or cfg.get("critic_effort") or FALLBACK_EFFORT
 
+
+def resolve_depth(cli):
+    cfg = load_config()
+    depth = (cli or os.environ.get("SPEC_HARDEN_DEPTH") or cfg.get("depth") or FALLBACK_DEPTH).lower()
+    if depth not in ("spec", "design"):
+        die(f"invalid depth {depth!r} — use 'spec' or 'design'.")
+    return depth
+
 # import the shared parser so we validate what Codex produced
 sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
 from protocol import parse_findings, parse_header  # noqa: E402
@@ -62,7 +83,7 @@ def die(msg):
     sys.exit(1)
 
 
-def build_prompt(harden_dir, round_no):
+def build_prompt(harden_dir, round_no, depth="spec"):
     draft = os.path.join(harden_dir, "draft.md")
     if not os.path.isfile(draft):
         die(f"draft not found: {draft}")
@@ -79,6 +100,9 @@ def build_prompt(harden_dir, round_no):
         prior_block = "- (no prior author round — this is the first critic pass.)"
         reads = "draft.md"
 
+    challenge = _CHALLENGE_BLOCK if depth == "design" else ""
+    lens_enum = _DESIGN_LENSES if depth == "design" else _SPEC_LENSES
+
     with open(TEMPLATE, encoding="utf-8") as fh:
         tpl = fh.read()
     return (
@@ -86,6 +110,8 @@ def build_prompt(harden_dir, round_no):
         .replace("{{DRAFT_REL}}", "draft.md")
         .replace("{{PRIOR_BLOCK}}", prior_block)
         .replace("{{READS}}", reads)
+        .replace("{{CHALLENGE_BLOCK}}", challenge)
+        .replace("{{LENS_ENUM}}", lens_enum)
     )
 
 
@@ -95,10 +121,13 @@ def main():
     ap.add_argument("round", type=int)
     ap.add_argument("--model", default=None, help="override critic model (else config/env/default)")
     ap.add_argument("--effort", default=None, help="override reasoning effort (else config/env/default)")
+    ap.add_argument("--depth", default=None, choices=["spec", "design"],
+                    help="spec = spec-quality only (default); design = also challenge the approach")
     args = ap.parse_args()
 
     model = resolve_model(args.model)
     effort = resolve_effort(args.effort)
+    depth = resolve_depth(args.depth)
 
     harden_dir = os.path.abspath(args.harden_dir)
     if not os.path.isdir(harden_dir):
@@ -108,7 +137,7 @@ def main():
     if not codex:
         die("`codex` CLI not found on PATH. Install with `npm install -g @openai/codex` and `codex login`.")
 
-    prompt = build_prompt(harden_dir, args.round)
+    prompt = build_prompt(harden_dir, args.round, depth)
     out_path = os.path.join(harden_dir, f"r{args.round}.codex.md")
 
     cmd = [
@@ -147,7 +176,7 @@ def main():
         die(f"Codex output did not match the finding-block format: {errors}\nSee {out_path}")
 
     print(out_path)
-    print(f"model={model} effort={effort} findings={len(findings)}")
+    print(f"model={model} effort={effort} depth={depth} findings={len(findings)}")
 
 
 if __name__ == "__main__":

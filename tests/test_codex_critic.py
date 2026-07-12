@@ -43,6 +43,24 @@ class TestPromptBuild(unittest.TestCase):
             self.assertIn("READS: draft.md, r1.claude.md", p)
             self.assertNotIn("{{", p)
 
+    def test_depth_spec_excludes_design(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._harden(d)
+            p = codex_critic.build_prompt(d, 1, depth="spec")
+            self.assertNotIn("challenge the APPROACH", p)
+            # the finding-block lens enum must NOT offer 'design' in spec mode
+            self.assertIn("LENS: completeness|testability|ambiguity|assumptions|scope\n", p)
+            self.assertNotIn("assumptions|scope|design", p)
+            self.assertNotIn("{{", p)
+
+    def test_depth_design_includes_challenge(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._harden(d)
+            p = codex_critic.build_prompt(d, 1, depth="design")
+            self.assertIn("challenge the APPROACH", p)
+            self.assertIn("assumptions|scope|design", p)  # design lens offered in the enum
+            self.assertNotIn("{{", p)
+
 
 class TestExecContract(unittest.TestCase):
     """Run the whole script against a fake `codex` binary — asserts flags + capture + validation."""

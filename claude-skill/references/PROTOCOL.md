@@ -54,8 +54,11 @@ SUGGESTION: <concrete fix>
 - `minor` — safe-to-resolve ambiguity/omission. Logged, does not block.
 - `nit` — style/wording. Logged, does not block.
 
-## Five lenses
+## Lenses
 Completeness · Testability · Ambiguity · Assumptions · Scope.
+In `--depth design` mode a sixth lens, **Design**, is also used — it challenges the approach
+itself (load-bearing assumptions, failure under real conditions, unconsidered alternatives,
+tradeoffs) rather than just how the spec is written.
 
 ## Critic guards (both critics)
 - **Anti-perfectionism:** a low/no-finding round is a legitimate convergence signal.

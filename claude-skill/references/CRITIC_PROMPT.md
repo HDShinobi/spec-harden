@@ -6,13 +6,13 @@ Your working directory is the harden folder. Read these files (they are in the C
 - `{{DRAFT_REL}}` — the current draft spec you must critique.
 {{PRIOR_BLOCK}}
 
-Evaluate the draft through these FIVE lenses:
+Evaluate the draft through these lenses:
 - **completeness** — missing decisions, states, data, or flows an implementer would need.
 - **testability** — can each requirement be verified? success/failure/edge/error paths defined?
 - **ambiguity** — wording that two engineers could reasonably implement differently.
 - **assumptions** — unstated or wrong assumptions that would cause rework.
 - **scope** — in/out-of-scope leaks, hidden scope, or contradictions with stated scope.
-
+{{CHALLENGE_BLOCK}}
 Severity:
 - `blocker` — unimplementable, self-contradictory, or missing a core decision. Blocks convergence.
 - `major` — a real gap or wrong assumption that would cause rework. Blocks convergence.
@@ -41,7 +41,7 @@ OPEN_MAJORS: <int>
 Then, for EACH finding, one block exactly in this shape (repeat, most severe first):
 
 [SEVERITY: blocker|major|minor|nit]
-LENS: completeness|testability|ambiguity|assumptions|scope
+LENS: {{LENS_ENUM}}
 LOCATION: <section name or short quote from the draft>
 ISSUE: <what is wrong or missing — one line>
 SUGGESTION: <concrete fix — one line>

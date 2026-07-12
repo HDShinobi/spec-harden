@@ -60,7 +60,7 @@ Run it once in Claude Code — the loop runs automatically to convergence:
 
 ```
 /spec-harden [spec-path] [--critic-model gpt-5.6-terra] [--critic-effort medium] \
-             [--final-verify sonnet|opus|haiku|fable|gemini]
+             [--depth spec|design] [--final-verify sonnet|opus|haiku|fable|gemini]
 ```
 
 | Step | What (all in Claude Code, automatic) |
@@ -82,9 +82,17 @@ Change the model / effort / final-verify **once** here instead of typing flags e
 {
   "critic_model": "gpt-5.6-terra",   // any model your ChatGPT account supports (gpt-5.6-sol, gpt-5.5, …)
   "critic_effort": "medium",         // low | medium | high | xhigh
+  "depth": "spec",                   // spec = spec-quality only | design = also challenge the approach
   "final_verify": "off"              // off | sonnet | opus | haiku | fable | gemini
 }
 ```
+
+**`depth`** is the interesting knob. `spec` (default) critiques *how the spec is written* —
+completeness, testability, ambiguity, assumptions, scope. `design` adds a sixth **Design** lens
+that challenges *the approach itself*: load-bearing assumptions, failure under real-world
+conditions, unconsidered alternatives, and the tradeoff being made — the philosophy behind
+`/codex:adversarial-review`, applied to your spec instead of a code diff. One-off:
+`/spec-harden <path> --depth design`.
 
 Precedence: **CLI flag > env var (`SPEC_HARDEN_CRITIC_MODEL` / `_EFFORT`) > `~/.spec-harden.json`
 > built-in default**. So `--critic-model gpt-5.6-sol` is a one-off override; the file is the

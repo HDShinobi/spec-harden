@@ -3,7 +3,8 @@
 import sys, os, re, json
 
 SEVERITIES = {"blocker", "major", "minor", "nit"}
-LENSES = {"completeness", "testability", "ambiguity", "assumptions", "scope"}
+# "design" is used only in --depth design (challenge-the-approach) mode; harmless elsewhere.
+LENSES = {"completeness", "testability", "ambiguity", "assumptions", "scope", "design"}
 
 _FIND_RE = re.compile(
     r'\[SEVERITY:\s*(?P<sev>[^\]]+)\]\s*\n'
