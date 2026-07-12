@@ -88,7 +88,8 @@ Change the model / effort / final-verify **once** here instead of typing flags e
 
 Precedence: **CLI flag > env var (`SPEC_HARDEN_CRITIC_MODEL` / `_EFFORT`) > `~/.spec-harden.json`
 > built-in default**. So `--critic-model gpt-5.6-sol` is a one-off override; the file is the
-persistent default.
+persistent default. `./install.sh` seeds this file for you from
+[`.spec-harden.example.json`](.spec-harden.example.json) if you don't already have one.
 
 ## The `harden/` folder
 

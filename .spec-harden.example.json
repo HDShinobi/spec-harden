@@ -1,0 +1,6 @@
+{
+  "_help": "Copy this to ~/.spec-harden.json and edit. spec-harden reads it automatically, so /spec-harden needs no flags. Precedence: CLI flag > env (SPEC_HARDEN_CRITIC_MODEL / _EFFORT) > this file > built-in default. critic_model: any Codex model your ChatGPT account supports (gpt-5.6-terra, gpt-5.6-sol, gpt-5.5). critic_effort: low | medium | high | xhigh. final_verify: off | sonnet | opus | haiku | fable | gemini (opt-in extra cross-check after the Codex loop converges).",
+  "critic_model": "gpt-5.6-terra",
+  "critic_effort": "medium",
+  "final_verify": "off"
+}
