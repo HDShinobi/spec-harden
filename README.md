@@ -68,9 +68,11 @@ every spec — it only fires when the spec meets at least one of:
 
 Gate on *consequence of being wrong*, not on spec length: a one-file migration deserves the loop,
 a five-file UI polish usually doesn't. That is why none of the three criteria counts files — a
-size proxy fires on the wide-but-harmless spec and stays silent on the narrow-but-fatal one. Small work goes straight to
-`superpowers:systematic-debugging` / `test-driven-development`. You can always run the loop by
-hand with `/spec-harden <path>` regardless of the gate.
+size proxy fires on the wide-but-harmless spec and stays silent on the narrow-but-fatal one.
+
+When the gate is not met, nothing else about the flow changes: brainstorming goes on to its user
+review gate and then to `writing-plans`, exactly as it would without this hook installed. You can
+always run the loop by hand with `/spec-harden <path>` regardless of the gate.
 
 ## Usage (the loop)
 

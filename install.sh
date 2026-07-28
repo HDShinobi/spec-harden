@@ -45,9 +45,10 @@ auto-hook only fires when the spec meets **at least one** of:
   loses user data), or
 - it changes **money, entitlement, or a system permission**.
 
-Otherwise skip the hook and go straight to \`superpowers:systematic-debugging\` /
-\`test-driven-development\`. Gate on *consequence of being wrong*, not on spec length. You can
-always run it by hand: \`/spec-harden <path>\`.
+Otherwise skip the hook and let brainstorming continue exactly as it normally would: its user
+review gate, then \`superpowers:writing-plans\`. Skipping the hook changes nothing else about
+the flow. Gate on *consequence of being wrong*, not on spec length. You can always run the
+loop by hand: \`/spec-harden <path>\`.
 EOF
     echo "appended auto-hook to $CLAUDE_MD"
   fi
