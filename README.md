@@ -66,15 +66,12 @@ every spec — it only fires when the spec meets at least one of:
   loses user data), or
 - it changes **money, entitlement, or a system permission**.
 
-Gate on *consequence of being wrong*, not on spec length: a one-file migration deserves the loop,
-a five-file UI polish usually doesn't. That is why none of the three criteria counts files — a
-size proxy fires on the wide-but-harmless spec and stays silent on the narrow-but-fatal one.
+All three ask what happens if the spec is wrong, and none of them counts files: a size proxy
+fires on the wide-but-harmless spec and stays silent on the narrow-but-fatal one. A one-file
+cache migration earns the loop; a five-file UI polish doesn't.
 
-When the gate is not met, nothing else about the flow changes: brainstorming goes on to its user
-review gate and then to `writing-plans`, exactly as it would without this hook installed — but it
-has to **tell you at that gate** that the loop was skipped and which criterion it missed, so that
-running it anyway is one word away while the spec is still in front of you. The gate picks the
-default; you keep the choice. `/spec-harden <path>` runs the loop by hand at any time.
+Otherwise the hook does nothing and brainstorming carries on as it would without it.
+`/spec-harden <path>` runs the loop by hand at any time, gate or no gate.
 
 ## Usage (the loop)
 
