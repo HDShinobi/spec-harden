@@ -54,6 +54,24 @@ cd spec-harden
 
 Both use symlinks back to the clone, so `git pull` updates every install at once.
 
+### The auto-hook is gated
+
+The global install appends a CLAUDE.md hook that fires after `superpowers:brainstorming` writes
+a spec. Because every round costs a full `codex exec` pass, the hook is **not** meant to run on
+every spec — it only fires when the spec meets at least one of:
+
+- it changes an **interface other code depends on** — a public API, a data contract, a protocol,
+  a file format read elsewhere, or
+- it changes **stored data** — schema, migration, cache format, file format (getting this wrong
+  loses user data), or
+- it changes **money, entitlement, or a system permission**.
+
+Gate on *consequence of being wrong*, not on spec length: a one-file migration deserves the loop,
+a five-file UI polish usually doesn't. That is why none of the three criteria counts files — a
+size proxy fires on the wide-but-harmless spec and stays silent on the narrow-but-fatal one. Small work goes straight to
+`superpowers:systematic-debugging` / `test-driven-development`. You can always run the loop by
+hand with `/spec-harden <path>` regardless of the gate.
+
 ## Usage (the loop)
 
 Run it once in Claude Code — the loop runs automatically to convergence:

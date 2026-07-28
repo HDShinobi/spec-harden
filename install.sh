@@ -36,6 +36,18 @@ automatic loop — Codex (GPT, via \`codex exec\`) is the primary critic and Cla
 author⇄critic loop hands-free (Gemini is only an opt-in \`--final-verify\`). Model/effort come
 from \`~/.spec-harden.json\`. If brainstorming wrote more than one spec, ask which to harden.
 Only present the spec for approval once the loop has converged (or the user opts out).
+
+**Gate — do not auto-invoke for small work.** Each round costs a full \`codex exec\` pass, so the
+auto-hook only fires when the spec meets **at least one** of:
+- it changes an **interface other code depends on** — a public API, a data contract, a
+  protocol, a file format read elsewhere, or
+- it changes **stored data** — schema, migration, cache format, file format (getting this wrong
+  loses user data), or
+- it changes **money, entitlement, or a system permission**.
+
+Otherwise skip the hook and go straight to \`superpowers:systematic-debugging\` /
+\`test-driven-development\`. Gate on *consequence of being wrong*, not on spec length. You can
+always run it by hand: \`/spec-harden <path>\`.
 EOF
     echo "appended auto-hook to $CLAUDE_MD"
   fi
