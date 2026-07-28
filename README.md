@@ -71,8 +71,10 @@ a five-file UI polish usually doesn't. That is why none of the three criteria co
 size proxy fires on the wide-but-harmless spec and stays silent on the narrow-but-fatal one.
 
 When the gate is not met, nothing else about the flow changes: brainstorming goes on to its user
-review gate and then to `writing-plans`, exactly as it would without this hook installed. You can
-always run the loop by hand with `/spec-harden <path>` regardless of the gate.
+review gate and then to `writing-plans`, exactly as it would without this hook installed — but it
+has to **tell you at that gate** that the loop was skipped and which criterion it missed, so that
+running it anyway is one word away while the spec is still in front of you. The gate picks the
+default; you keep the choice. `/spec-harden <path>` runs the loop by hand at any time.
 
 ## Usage (the loop)
 
