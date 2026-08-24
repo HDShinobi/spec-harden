@@ -102,7 +102,9 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
 1. Read `target_spec_path` from `STATUS.md` (`protocol.py status-read`). Overwrite THAT file
    with `<harden>/draft.md`.
 2. Write `<harden>/SUMMARY.md`: rounds run, critic model(s) used, findings by severity, accepted
-   vs rebutted, any unresolved majors, and the `minor`/`nit` cleanup list.
+   vs rebutted, any unresolved majors, and the `minor`/`nit` cleanup list. End it with a closing
+   line: `Converged = spec quality only, not implementation correctness — code still needs the
+   project's real verification.`
 3. Commit **only** the target spec + the `<harden>/` dir:
    `git add <target_spec_path> <harden> && git commit -m "docs(spec): harden <name>"`.
 4. Tell the user it is done and where the summary is.
@@ -116,3 +118,11 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
 - Codex uses the logged-in ChatGPT account, NOT the `/codex` plugin's app-server (that pins an
   older client_version and rejects current models). `codex_critic.py` calls `codex exec`
   directly for this reason.
+- **This loop hardens the SPEC, not the code.** Never run or imitate the adversarial loop as a
+  code-review loop — adversarial rounds sharpen documents; code is proven by the project's own
+  verification (a test that fails before and passes after, running the thing), never by another
+  review round.
+- **"Converged" certifies the spec, not any implementation of it.** It means the spec survived
+  adversarial review — zero evidence that code built from it is correct or complete. Never cite
+  this loop's verdict as done-evidence for implementation work; only the project's real
+  verification is that.

@@ -69,6 +69,8 @@ tradeoffs) rather than just how the spec is written.
 ## Convergence
 Converged when a Codex round reports `OPEN_BLOCKERS: 0` and `OPEN_MAJORS: 0` AND the
 Author accepted no new blocker/major that round.
+- Convergence is a statement about the spec document alone — it carries no evidence that any
+  implementation of it is correct or complete; never cite it as completion evidence.
 - **Circuit-breaker:** if the same blocker/major recurs across two rounds unresolved
   (Author REBUT vs critic re-raise, or an ACCEPTed fix still fails), STOP and surface it
   to the user to arbitrate.
