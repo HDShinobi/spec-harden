@@ -68,6 +68,15 @@ class TestProtocol(unittest.TestCase):
             self.assertEqual(s["round"], "2")
             self.assertEqual(s["converged"], "false")
 
+    def test_status_converged_true_roundtrips(self):
+        # the converged-exit path writes the flag as the CLI string "true"; it must read back "true"
+        with tempfile.TemporaryDirectory() as d:
+            protocol.write_status(d, "claude", 3, "true")
+            self.assertEqual(protocol.read_status(d)["converged"], "true")
+            # a bool True must serialize the same way (lower-cased)
+            protocol.write_status(d, "claude", 3, True)
+            self.assertEqual(protocol.read_status(d)["converged"], "true")
+
     def test_status_target_spec_path(self):
         with tempfile.TemporaryDirectory() as d:
             protocol.write_status(d, "gemini", 1, False, "docs/x-design.md")

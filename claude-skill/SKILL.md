@@ -45,6 +45,8 @@ automatically.** All settings have this precedence: **CLI flag > env var > `~/.s
 - User asks to finalize / confirms / says "chốt" → **finalize**.
 - Harden dir exists and `STATUS.md` turn = `gemini` → user just ran the Gemini final-verify in
   Antigravity → **resume-after-gemini**.
+- Harden dir exists and `STATUS.md` `converged: true` (turn ≠ gemini) → the loop already
+  converged; go to **final-verify / wrap-up** and ask to finalize — do NOT open another round.
 - Otherwise (harden dir exists mid-run) → continue the **loop** from the next round.
 
 Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/round.
@@ -71,7 +73,9 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
    4. `protocol.py status-write <harden> claude <N+1> false`.
    5. **Stop conditions** (check in order):
       - **Converged:** `protocol.py converged <harden>/rN.codex.md` exits 0 AND you accepted no
-        new blocker/major this round → break the loop, go to **final-verify / wrap-up**.
+        new blocker/major this round → `protocol.py status-write <harden> claude N true` (this is
+        the ONLY path that sets the converged flag true; step 4.4 above always wrote `false`),
+        then break the loop and go to **final-verify / wrap-up**.
       - **Circuit-breaker:** the SAME blocker/major appears in `r(N-1).codex.md` and
         `rN.codex.md` still unresolved (you REBUTted it, or your ACCEPTed fix didn't satisfy it)
         → STOP the loop and surface it to the user to arbitrate. Do not keep looping.
@@ -102,9 +106,12 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
 1. Read `target_spec_path` from `STATUS.md` (`protocol.py status-read`). Overwrite THAT file
    with `<harden>/draft.md`.
 2. Write `<harden>/SUMMARY.md`: rounds run, critic model(s) used, findings by severity, accepted
-   vs rebutted, any unresolved majors, and the `minor`/`nit` cleanup list. End it with a closing
-   line: `Converged = spec quality only, not implementation correctness — code still needs the
-   project's real verification.`
+   vs rebutted, any unresolved majors, the `minor`/`nit` cleanup list, and the **convergence
+   basis** — exactly one of: `protocol-clean` (a Codex round hit `OPEN_BLOCKERS: 0` /
+   `OPEN_MAJORS: 0`), `author-judgment` (stopped with the author satisfied although a round still
+   raised an adjacent finding), or `cap-hit` (`MAX_ROUNDS` reached with open majors — NOT clean,
+   never present as such). End it with a closing line: `Converged = spec quality only, not
+   implementation correctness — code still needs the project's real verification.`
 3. Commit **only** the target spec + the `<harden>/` dir:
    `git add <target_spec_path> <harden> && git commit -m "docs(spec): harden <name>"`.
 4. Tell the user it is done and where the summary is.
