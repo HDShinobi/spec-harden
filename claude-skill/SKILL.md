@@ -45,6 +45,9 @@ automatically.** All settings have this precedence: **CLI flag > env var > `~/.s
 - User asks to finalize / confirms / says "chốt" → **finalize**.
 - Harden dir exists and `STATUS.md` turn = `gemini` → user just ran the Gemini final-verify in
   Antigravity → **resume-after-gemini**.
+- Harden dir exists and `STATUS.md` `finalized: true` → the run is TERMINAL (spec already
+  promoted). Report the recorded `finalization_basis` and point at `SUMMARY.md`; do NOT open a
+  round. Re-harden only if the user explicitly asks to start a new run.
 - Harden dir exists and `STATUS.md` `converged: true` (turn ≠ gemini) → the loop already
   converged; go to **final-verify / wrap-up** and ask to finalize — do NOT open another round.
 - Otherwise (harden dir exists mid-run) → continue the **loop** from the next round.
@@ -67,6 +70,12 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
    2. **Adjudicate:** `protocol.py findings <harden>/rN.codex.md`. For each finding: **ACCEPT**
       → edit `draft.md` to fix; **REBUT** → one-line reason it is invalid/out-of-scope. Do not
       accept blindly — this is the author's judgment.
+      - **Altitude check (do this before accepting a major):** is the finding a DESIGN gap or
+        IMPLEMENTATION PRECISION? Close design gaps in the draft. For a precision item (exact
+        signature, constant, lane count, byte offset) — even if the critic marked it major —
+        **REBUT it as "altitude: defer to writing-plans/TDD"** and record it in a `## Deferred to
+        plan` list in `draft.md`; do NOT pin it in the spec. Chasing precision is how this loop
+        turns into code review and runs forever.
    3. **Write `<harden>/rN.claude.md`:** the header (`AUTHOR: claude`, `OPEN_BLOCKERS`/
       `OPEN_MAJORS` = counts you did NOT resolve), per-finding ACCEPT/REBUT lines, and a short
       list of the draft changes you made.
@@ -79,8 +88,11 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
       - **Circuit-breaker:** the SAME blocker/major appears in `r(N-1).codex.md` and
         `rN.codex.md` still unresolved (you REBUTted it, or your ACCEPTed fix didn't satisfy it)
         → STOP the loop and surface it to the user to arbitrate. Do not keep looping.
-      - **Cap:** `N == MAX_ROUNDS` with open majors → STOP; list the unresolved majors. This is
-        NOT convergence — never call it clean.
+      - **Cap (checkpoint, not silent overrun):** `N == MAX_ROUNDS` and not converged → STOP and
+        ask the user to choose ONE: finalize as `cap-hit` (never called clean), extend by an
+        explicit new max (then continue), or leave the run open. Never run past the cap on your
+        own. If the open findings at the cap are all implementation-precision, say so — that is a
+        design-complete signal, and finalizing is usually the right call.
       - Else continue to round `N+1`.
 
 ## final-verify / wrap-up
@@ -106,15 +118,24 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
 1. Read `target_spec_path` from `STATUS.md` (`protocol.py status-read`). Overwrite THAT file
    with `<harden>/draft.md`.
 2. Write `<harden>/SUMMARY.md`: rounds run, critic model(s) used, findings by severity, accepted
-   vs rebutted, any unresolved majors, the `minor`/`nit` cleanup list, and the **convergence
-   basis** — exactly one of: `protocol-clean` (a Codex round hit `OPEN_BLOCKERS: 0` /
-   `OPEN_MAJORS: 0`), `author-judgment` (stopped with the author satisfied although a round still
-   raised an adjacent finding), or `cap-hit` (`MAX_ROUNDS` reached with open majors — NOT clean,
-   never present as such). End it with a closing line: `Converged = spec quality only, not
-   implementation correctness — code still needs the project's real verification.`
-3. Commit **only** the target spec + the `<harden>/` dir:
+   vs rebutted, the `## Deferred to plan` list (implementation-precision handed to writing-plans),
+   and the **finalization basis** — exactly one of: `protocol-clean` (a Codex round hit
+   `OPEN_BLOCKERS: 0` / `OPEN_MAJORS: 0` = design-complete), `author-judgment` (the author chose to
+   stop though a round still raised an adjacent design finding), or `cap-hit` (`MAX_ROUNDS` reached
+   with open majors — never present as clean).
+   - **Last-mile honesty:** if the LAST Codex round still reported open majors that you then fixed
+     (no confirming critic round saw the fixed draft), state plainly *"last fixes are
+     critic-unverified"* and offer the user one confirming Codex round before promoting. Only
+     `protocol-clean` means a critic round actually saw a zero-major draft.
+   - End with the closing line: `Converged = spec quality only, not implementation correctness —
+     code still needs the project's real verification.`
+   - Then run `python3 $SKILL_DIR/scripts/protocol.py summary-check <harden>`; if it exits
+     non-zero, fix the missing pieces before continuing.
+3. `python3 $SKILL_DIR/scripts/protocol.py finalize-status <harden> <basis>` — stamps
+   `finalized: true` + `finalization_basis` so the run is terminal and never re-looped.
+4. Commit **only** the target spec + the `<harden>/` dir:
    `git add <target_spec_path> <harden> && git commit -m "docs(spec): harden <name>"`.
-4. Tell the user it is done and where the summary is.
+5. Tell the user it is done, the finalization basis, and where the summary is.
 
 ## Guards
 - Apply the PROTOCOL critic guards (anti-perfectionism, high-confidence bias) — they are baked
@@ -133,3 +154,9 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
   adversarial review — zero evidence that code built from it is correct or complete. Never cite
   this loop's verdict as done-evidence for implementation work; only the project's real
   verification is that.
+- **Keep the spec at DESIGN altitude.** Harden design decisions (behavior, invariants, states,
+  failures, contradictions) to zero-major; hand implementation precision (signatures, constants,
+  lane counts, offsets) to writing-plans + TDD. When a round produces only precision findings, the
+  spec is design-complete — STOP; do not keep looping. Putting code-level detail (e.g. exact Swift
+  signatures) into a spec invites the critic to nitpick it and inflates the round count — a signal
+  the spec dropped below design altitude, not that it needs more hardening.

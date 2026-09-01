@@ -78,6 +78,38 @@ def write_status(d, turn, round_, converged, target_spec_path=None):
         fh.write("\n".join(lines) + "\n")
 
 
+FINALIZATION_BASES = ("protocol-clean", "author-judgment", "cap-hit")
+
+
+def mark_finalized(d, basis):
+    """Stamp a run terminal so dispatch never re-loops it. Basis records HOW it ended."""
+    if basis not in FINALIZATION_BASES:
+        raise ValueError("basis must be one of %s" % (FINALIZATION_BASES,))
+    s = read_status(d)
+    s["finalized"] = "true"
+    s["finalization_basis"] = basis
+    order = ["turn", "round", "converged", "finalized", "finalization_basis", "target_spec_path"]
+    lines = [f"{k}: {s[k]}" for k in order if k in s]
+    lines += [f"{k}: {v}" for k, v in s.items() if k not in order]
+    with open(os.path.join(d, "STATUS.md"), "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
+def summary_check(d):
+    """Return a list of missing required SUMMARY.md pieces (empty = OK). Enforces the
+    finalize contract mechanically instead of trusting the author to remember it."""
+    p = os.path.join(d, "SUMMARY.md")
+    if not os.path.exists(p):
+        return ["SUMMARY.md is missing"]
+    t = open(p, encoding="utf-8").read().lower()
+    missing = []
+    if "basis" not in t:
+        missing.append("finalization basis line (protocol-clean | author-judgment | cap-hit)")
+    if "spec quality only" not in t:
+        missing.append("closing caveat line ('... spec quality only, not implementation correctness ...')")
+    return missing
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "findings":
@@ -94,8 +126,22 @@ def main():
         # status-write <dir> <turn> <round> <converged> [target_spec_path]
         tsp = sys.argv[6] if len(sys.argv) > 6 else None
         write_status(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], tsp)
+    elif cmd == "finalize-status":
+        # finalize-status <dir> <protocol-clean|author-judgment|cap-hit>
+        try:
+            mark_finalized(sys.argv[2], sys.argv[3])
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            sys.exit(2)
+    elif cmd == "summary-check":
+        # summary-check <dir> — exit 1 (and list) if the SUMMARY is missing required pieces
+        missing = summary_check(sys.argv[2])
+        if missing:
+            print("\n".join("missing: " + m for m in missing))
+            sys.exit(1)
     else:
-        print("usage: protocol.py findings|converged|status-read|status-write ...", file=sys.stderr)
+        print("usage: protocol.py findings|converged|status-read|status-write|"
+              "finalize-status|summary-check ...", file=sys.stderr)
         sys.exit(2)
 
 

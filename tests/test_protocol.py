@@ -77,6 +77,35 @@ class TestProtocol(unittest.TestCase):
             protocol.write_status(d, "claude", 3, True)
             self.assertEqual(protocol.read_status(d)["converged"], "true")
 
+    def test_mark_finalized_sets_flag_and_preserves_fields(self):
+        with tempfile.TemporaryDirectory() as d:
+            protocol.write_status(d, "claude", 5, "false", "docs/x-design.md")
+            protocol.mark_finalized(d, "author-judgment")
+            s = protocol.read_status(d)
+            self.assertEqual(s["finalized"], "true")
+            self.assertEqual(s["finalization_basis"], "author-judgment")
+            self.assertEqual(s["target_spec_path"], "docs/x-design.md")  # preserved
+            self.assertEqual(s["round"], "5")                            # preserved
+
+    def test_mark_finalized_rejects_unknown_basis(self):
+        with tempfile.TemporaryDirectory() as d:
+            protocol.write_status(d, "claude", 1, "false")
+            with self.assertRaises(ValueError):
+                protocol.mark_finalized(d, "totally-clean")
+
+    def test_summary_check_flags_missing_pieces(self):
+        with tempfile.TemporaryDirectory() as d:
+            # no SUMMARY.md at all
+            self.assertTrue(protocol.summary_check(d))
+            # missing the caveat line
+            open(os.path.join(d, "SUMMARY.md"), "w").write("Finalization basis: protocol-clean\n")
+            self.assertTrue(any("caveat" in m.lower() for m in protocol.summary_check(d)))
+            # complete
+            open(os.path.join(d, "SUMMARY.md"), "w").write(
+                "Finalization basis: protocol-clean\n"
+                "Converged = spec quality only, not implementation correctness — verify the code.\n")
+            self.assertEqual(protocol.summary_check(d), [])
+
     def test_status_target_spec_path(self):
         with tempfile.TemporaryDirectory() as d:
             protocol.write_status(d, "gemini", 1, False, "docs/x-design.md")

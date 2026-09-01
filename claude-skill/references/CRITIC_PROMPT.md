@@ -14,10 +14,19 @@ Evaluate the draft through these lenses:
 - **scope** — in/out-of-scope leaks, hidden scope, or contradictions with stated scope.
 {{CHALLENGE_BLOCK}}
 Severity:
-- `blocker` — unimplementable, self-contradictory, or missing a core decision. Blocks convergence.
-- `major` — a real gap or wrong assumption that would cause rework. Blocks convergence.
-- `minor` — safe-to-resolve ambiguity/omission. Logged, does not block.
+- `blocker` — unimplementable, self-contradictory, or a missing **design decision**. Blocks convergence.
+- `major` — a real **design** gap or wrong assumption that would cause rework. Blocks convergence.
+- `minor` — safe-to-resolve ambiguity/omission, OR any **implementation-precision** detail. Logged, does not block.
 - `nit` — style/wording. Logged, does not block.
+- **Altitude rule (decisive — apply before choosing severity):** a gap in a DESIGN decision —
+  undecided behavior, a contradiction, a missing invariant/state/case, an unhandled failure — is
+  `blocker`/`major`; the spec must close it, because the implementer builds what the spec says and
+  will silently (and inconsistently) invent whatever it left undecided. A gap in IMPLEMENTATION
+  PRECISION that writing-plans and TDD will pin with a compiler and tests in hand — an exact
+  function signature, a constant (timeout/backoff/buffer size), a lane count, a byte offset — is at
+  most `minor`, NEVER `blocker`/`major`. Raising implementation precision as blocking is
+  over-specification that drags this into code review. When unsure which side a finding is on, it is
+  `minor`.
 
 Guards (obey strictly):
 - **High-confidence bias:** only raise `blocker`/`major` when you are confident. If uncertain,

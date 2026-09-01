@@ -128,7 +128,7 @@ persistent default. `./install.sh` seeds this file for you from
   rN.claude.md             # round N author adjudication (Claude)
   verify.claude-<model>.md # optional final-verify subagent log
   rN.gemini.md             # optional final-verify findings (Gemini, if used)
-  STATUS.md                # turn / round / converged / target_spec_path
+  STATUS.md                # turn / round / converged / finalized / finalization_basis / target_spec_path
   SUMMARY.md               # written at finalize
 ```
 
