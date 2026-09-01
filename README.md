@@ -2,8 +2,10 @@
 
 A cross-model **adversarial spec-review loop**. One model writes and defends a spec (the
 **author**); a *different* model family critiques it (the **critic**). They exchange files in a
-`harden/` folder and iterate until a round surfaces no new blocker/major finding — then the
-hardened draft is promoted to the real spec on your confirmation.
+`harden/` folder and iterate until every **design decision** is closed — then the hardened draft
+is promoted to the real spec on your confirmation. It hardens the *spec*, never the code, and it
+stops at design altitude: implementation precision (exact signatures, constants, offsets) is
+handed to writing-plans / TDD, not chased here.
 
 - **Author / orchestrator** — Claude Code (owns the spec, runs the loop, adjudicates
   ACCEPT/REBUT, edits the draft).
@@ -12,6 +14,37 @@ hardened draft is promoted to the real spec on your confirmation.
 - **Final-verify critic** *(optional, opt-in)* — one extra cross-check after the Codex loop
   converges, by a *different* reviewer: a fresh Claude subagent
   (`--final-verify sonnet|opus|haiku|fable`) or Gemini in Antigravity (`--final-verify gemini`).
+
+## What it hardens — and when it stops
+
+**What it does.** It closes *design* holes in a spec before any code is written — undecided
+behavior, contradictions, missing invariants/states/cases, unhandled failures. Each round Codex
+critiques `draft.md`; Claude adjudicates (fix design gaps into the draft; **defer** implementation
+precision to a `## Deferred to plan` list rather than pinning it in the spec). It never touches
+code, and never overwrites the real spec until you confirm.
+
+**The altitude line.** A finding is `blocker`/`major` only if it's a *design* gap the spec must
+decide — because the implementer builds what the spec says and will silently invent whatever it
+left undecided, and no test catches a decision that was never made. Implementation precision (a
+signature, a timeout/backoff constant, a lane count, a byte offset) is at most `minor` and is
+deferred — the compiler and TDD pin it far better. This is what keeps the loop from turning into
+code review and running forever.
+
+**When it stops** — each round checks, in order:
+
+1. **Converged (design-complete)** — a critic round with 0 blocker / 0 major and nothing new
+   accepted. Every design decision is closed; only deferred precision minors remain → stop, then
+   ask you to finalize.
+2. **Circuit-breaker** — the same finding ping-pongs across two rounds unresolved → stop and ask
+   you to arbitrate.
+3. **Cap (checkpoint)** — `MAX_ROUNDS = 4` reached without converging → stop and ask you to pick
+   one: finalize as `cap-hit`, extend by an explicit new max, or leave it open. It never runs past
+   the cap on its own.
+
+On finalize (only after you confirm) it promotes `draft.md` to the real spec, writes `SUMMARY.md`
+with the **finalization basis** (`protocol-clean` | `author-judgment` | `cap-hit`) and commits.
+The run is then marked `finalized` — re-running `/spec-harden` on that spec reports it as done and
+will **not** re-loop unless you explicitly start a new run.
 
 ## Why a different-model critic?
 
@@ -85,7 +118,7 @@ Run it once in Claude Code — the loop runs automatically to convergence:
 | Step | What (all in Claude Code, automatic) |
 |------|--------------------------------------|
 | **init** | creates `<name>.harden/`, copies the spec to `draft.md`, lints it |
-| **loop** | each round: `codex exec` critiques `draft.md` → `rN.codex.md`; Claude adjudicates ACCEPT/REBUT, edits `draft.md`, writes `rN.claude.md`, checks convergence. Repeats up to `MAX_ROUNDS = 4`. |
+| **loop** | each round: `codex exec` critiques `draft.md` → `rN.codex.md`; Claude adjudicates ACCEPT (fix design gaps) / REBUT (defer precision to plan), writes `rN.claude.md`, checks convergence. Stops at design-complete, a circuit-breaker, or the `MAX_ROUNDS = 4` checkpoint (which asks you, never runs past silently). |
 | **final-verify** *(opt-in)* | one extra cross-check by a different reviewer (Claude subagent, or Gemini in Antigravity) |
 | **finalize** | on your confirmation → promotes `draft.md` to the real spec, writes `SUMMARY.md`, commits |
 
@@ -132,10 +165,13 @@ persistent default. `./install.sh` seeds this file for you from
   SUMMARY.md               # written at finalize
 ```
 
-Findings are severity-tagged (`blocker`/`major` block convergence; `minor`/`nit` are logged) and
-reviewed through five lenses: **Completeness, Testability, Ambiguity, Assumptions, Scope**.
-Convergence = a critic round with 0 open blocker/major and no newly-raised ones; a circuit-breaker
-stops ping-ponging and `MAX_ROUNDS = 4` caps thrash. Full contract in
+Findings are severity-tagged by **altitude**: a *design* gap is `blocker`/`major` (blocks
+convergence); *implementation precision* and style are `minor`/`nit` (logged, deferred to plan).
+They are reviewed through five lenses — **Completeness, Testability, Ambiguity, Assumptions,
+Scope** (a sixth, **Design**, in `--depth design`). Convergence = a critic round with 0 open
+blocker/major = **design-complete**; a circuit-breaker stops ping-ponging and `MAX_ROUNDS = 4` is
+a checkpoint that asks you rather than a silent overrun. `STATUS.md` carries `converged`
+(design-clean) and `finalized` (terminal — promoted, never re-looped). Full contract in
 [`claude-skill/references/PROTOCOL.md`](claude-skill/references/PROTOCOL.md).
 
 ## Tests
