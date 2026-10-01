@@ -32,7 +32,7 @@ automatically.** All settings have this precedence: **CLI flag > env var > `~/.s
   `python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/.spec-harden.json'))).get('final_verify','off'))"`
   (treat a missing file or `off` as "no final-verify").
 - `--critic-model M` / `--critic-effort E` / `--depth {spec|design}` = one-off overrides for this
-  run (Codex model, e.g. `gpt-5.6-terra`/`gpt-5.6-sol`/`gpt-5.5`; effort `low|medium|high|xhigh`;
+  run (Codex model, e.g. `gpt-6.1-sol`/`gpt-5.6-terra`/`gpt-5.5`; effort `low|medium|high|xhigh`;
   depth `spec` = spec-quality only [default], `design` = ALSO challenge the approach, tradeoffs,
   and alternatives). Pass them straight through to `codex_critic.py`; it reads its own defaults
   from `~/.spec-harden.json` otherwise.

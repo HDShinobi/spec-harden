@@ -33,7 +33,7 @@ TEMPLATE = os.path.join(SKILL_DIR, "references", "CRITIC_PROMPT.md")
 # Settings file — edit this to change the critic model / effort once, no flags needed.
 # Precedence: CLI flag > env var > config file > built-in default.
 CONFIG_PATH = os.environ.get("SPEC_HARDEN_CONFIG", os.path.expanduser("~/.spec-harden.json"))
-FALLBACK_MODEL = "gpt-5.6-terra"
+FALLBACK_MODEL = "gpt-6.1-sol"
 FALLBACK_EFFORT = "medium"
 FALLBACK_DEPTH = "spec"          # spec = spec-quality only; design = also challenge the approach
 FALLBACK_TIMEOUT = 900           # seconds per critic round

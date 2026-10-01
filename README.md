@@ -111,7 +111,7 @@ Otherwise the hook does nothing and brainstorming carries on as it would without
 Run it once in Claude Code — the loop runs automatically to convergence:
 
 ```
-/spec-harden [spec-path] [--critic-model gpt-5.6-terra] [--critic-effort medium] \
+/spec-harden [spec-path] [--critic-model gpt-6.1-sol] [--critic-effort medium] \
              [--depth spec|design] [--context DIR…|none] [--timeout SECONDS] \
              [--final-verify sonnet|opus|haiku|fable|gemini]
 ```
@@ -133,7 +133,7 @@ Change the model / effort / final-verify **once** here instead of typing flags e
 
 ```jsonc
 {
-  "critic_model": "gpt-5.6-terra",   // any model your ChatGPT account supports (gpt-5.6-sol, gpt-5.5, …)
+  "critic_model": "gpt-6.1-sol",     // any model your ChatGPT account supports (gpt-5.6-terra, gpt-5.5, …)
   "critic_effort": "medium",         // low | medium | high | xhigh
   "depth": "spec",                   // spec = spec-quality only | design = also challenge the approach
   "critic_timeout": 900,             // seconds per critic round (a round usually takes 1–5 min)
@@ -156,7 +156,7 @@ tree the spec cites), or `none` to critique the draft alone.
 
 Precedence: **CLI flag > env var (`SPEC_HARDEN_CRITIC_MODEL` / `_EFFORT` / `_DEPTH` /
 `_CRITIC_TIMEOUT` / `SPEC_HARDEN_CONTEXT`) > `~/.spec-harden.json`
-> built-in default**. So `--critic-model gpt-5.6-sol` is a one-off override; the file is the
+> built-in default**. So `--critic-model gpt-5.6-terra` is a one-off override; the file is the
 persistent default. `./install.sh` seeds this file for you from
 [`.spec-harden.example.json`](.spec-harden.example.json) if you don't already have one.
 
