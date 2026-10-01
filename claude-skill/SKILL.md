@@ -25,9 +25,10 @@ automatically.** All settings have this precedence: **CLI flag > env var > `~/.s
      - **Two or more modified close together** (superpowers just wrote multiple) → list the
        candidates with their mtimes and **ask the user which to harden** (offer "all, in
        sequence"). Do NOT guess when it is ambiguous.
-- **Settings file `~/.spec-harden.json`** (keys `critic_model`, `critic_effort`, `final_verify`)
-  is the place to change these once. `codex_critic.py` reads `critic_model`/`critic_effort` from
-  it itself, so you never pass them on the loop calls. For `final_verify`, YOU read the file:
+- **Settings file `~/.spec-harden.json`** (keys `critic_model`, `critic_effort`, `depth`,
+  `critic_timeout`, `context`, `final_verify`) is the place to change these once.
+  `codex_critic.py` reads every key except `final_verify` itself, so you never pass them on the
+  loop calls. For `final_verify`, YOU read the file:
   `python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/.spec-harden.json'))).get('final_verify','off'))"`
   (treat a missing file or `off` as "no final-verify").
 - `--critic-model M` / `--critic-effort E` / `--depth {spec|design}` = one-off overrides for this
@@ -35,6 +36,11 @@ automatically.** All settings have this precedence: **CLI flag > env var > `~/.s
   depth `spec` = spec-quality only [default], `design` = ALSO challenge the approach, tradeoffs,
   and alternatives). Pass them straight through to `codex_critic.py`; it reads its own defaults
   from `~/.spec-harden.json` otherwise.
+- `--context DIR…|none` / `--timeout S` = one-off overrides. **Context** = directories the critic
+  may READ to verify the draft's factual claims (file paths, `file:line` refs, APIs); default is
+  the git toplevel of the spec's repo, so codebase-grounded specs get their citations checked.
+  Add extra roots (e.g. an extracted upstream tree the spec cites); `none` = draft only.
+  **Timeout** = seconds per critic round (default 900).
 - `--final-verify T` = one-off override of the config's `final_verify`: `sonnet|opus|haiku|fable`
   (a fresh Claude subagent critic) or `gemini` (manual Antigravity handoff), or `off`.
 - Harden dir = `<spec-dir>/<spec-stem>.harden/`. `SKILL_DIR` = this skill's directory
@@ -63,7 +69,10 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
    so `finalize` promotes back to the exact file).
 4. **Loop** for round `N = 1, 2, …` up to `MAX_ROUNDS = 4`:
    1. **Codex critic turn:**
-      `python3 $SKILL_DIR/scripts/codex_critic.py <harden> N [--model M] [--effort E] [--depth D]`.
+      `python3 $SKILL_DIR/scripts/codex_critic.py <harden> N [--model M] [--effort E] [--depth D] [--context DIR…] [--timeout S]`.
+      **A round takes 1–5 minutes** — run it with the Bash tool's `timeout: 600000` (or higher to
+      match `critic_timeout`) or with `run_in_background: true` and wait for the completion
+      notice. Claude Code's default 120 s Bash timeout will kill a normal round mid-flight.
       It runs `codex exec` read-only over `draft.md` (+ prior `r(N-1).claude.md`) and writes a
       format-validated `<harden>/rN.codex.md`. If it exits non-zero, show its stderr and STOP
       (env/auth issue — do NOT count as a round; e.g. re-run `codex login`).
@@ -92,7 +101,11 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
         ask the user to choose ONE: finalize as `cap-hit` (never called clean), extend by an
         explicit new max (then continue), or leave the run open. Never run past the cap on your
         own. If the open findings at the cap are all implementation-precision, say so — that is a
-        design-complete signal, and finalizing is usually the right call.
+        design-complete signal, and finalizing is usually the right call. If instead the last
+        round's majors are **regressions of your own previous fixes** and their scope is
+        narrowing round over round (a common pattern: each fix exposes an edge of itself),
+        recommend **extending by exactly one confirming round** — it is the only way to reach
+        `protocol-clean` without calling unverified fixes clean.
       - Else continue to round `N+1`.
 
 ## final-verify / wrap-up
@@ -115,7 +128,8 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
    appears, resolve it; otherwise summarize and ask the user to confirm **finalize**.
 
 ## finalize (only after the user confirms)
-1. Read `target_spec_path` from `STATUS.md` (`protocol.py status-read`). Overwrite THAT file
+1. Read `target_spec_path` from `STATUS.md` (`protocol.py status-read` prints **JSON** — parse it
+   with `json`, not `awk`/`cut`, and check the path exists before writing). Overwrite THAT file
    with `<harden>/draft.md`.
 2. Write `<harden>/SUMMARY.md`: rounds run, critic model(s) used, findings by severity, accepted
    vs rebutted, the `## Deferred to plan` list (implementation-precision handed to writing-plans),
@@ -135,6 +149,10 @@ Run `python3 $SKILL_DIR/scripts/protocol.py status-read <harden>` to read turn/r
    `finalized: true` + `finalization_basis` so the run is terminal and never re-looped.
 4. Commit **only** the target spec + the `<harden>/` dir:
    `git add <target_spec_path> <harden> && git commit -m "docs(spec): harden <name>"`.
+   Spec dirs are often gitignored (e.g. `docs/superpowers/`): first run
+   `git check-ignore -q <path>` **once per path** (`-q` accepts only a single pathname); if either is ignored, use
+   `git add -f` for exactly those two paths and tell the user you force-added ignored files.
+   Never change `.gitignore` for this.
 5. Tell the user it is done, the finalization basis, and where the summary is.
 
 ## Guards

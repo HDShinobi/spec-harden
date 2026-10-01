@@ -6,6 +6,7 @@ Your working directory is the harden folder. Read these files (they are in the C
 - `{{DRAFT_REL}}` — the current draft spec you must critique.
 {{PRIOR_BLOCK}}
 
+{{CONTEXT_BLOCK}}
 Evaluate the draft through these lenses:
 - **completeness** — missing decisions, states, data, or flows an implementer would need.
 - **testability** — can each requirement be verified? success/failure/edge/error paths defined?

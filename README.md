@@ -112,7 +112,8 @@ Run it once in Claude Code — the loop runs automatically to convergence:
 
 ```
 /spec-harden [spec-path] [--critic-model gpt-5.6-terra] [--critic-effort medium] \
-             [--depth spec|design] [--final-verify sonnet|opus|haiku|fable|gemini]
+             [--depth spec|design] [--context DIR…|none] [--timeout SECONDS] \
+             [--final-verify sonnet|opus|haiku|fable|gemini]
 ```
 
 | Step | What (all in Claude Code, automatic) |
@@ -135,6 +136,8 @@ Change the model / effort / final-verify **once** here instead of typing flags e
   "critic_model": "gpt-5.6-terra",   // any model your ChatGPT account supports (gpt-5.6-sol, gpt-5.5, …)
   "critic_effort": "medium",         // low | medium | high | xhigh
   "depth": "spec",                   // spec = spec-quality only | design = also challenge the approach
+  "critic_timeout": 900,             // seconds per critic round (a round usually takes 1–5 min)
+  "context": "repo",                 // repo = critic may read the spec's git repo to verify file/line claims | none | ["/dir", …]
   "final_verify": "off"              // off | sonnet | opus | haiku | fable | gemini
 }
 ```
@@ -146,7 +149,13 @@ conditions, unconsidered alternatives, and the tradeoff being made — the philo
 `/codex:adversarial-review`, applied to your spec instead of a code diff. One-off:
 `/spec-harden <path> --depth design`.
 
-Precedence: **CLI flag > env var (`SPEC_HARDEN_CRITIC_MODEL` / `_EFFORT`) > `~/.spec-harden.json`
+**`context`** matters for codebase-grounded specs: by default the critic may read (never write)
+the spec's git repository, so it can check that cited paths, `file:line` references and APIs
+actually say what the spec claims. Pass extra roots with `--context` (e.g. an extracted upstream
+tree the spec cites), or `none` to critique the draft alone.
+
+Precedence: **CLI flag > env var (`SPEC_HARDEN_CRITIC_MODEL` / `_EFFORT` / `_DEPTH` /
+`_CRITIC_TIMEOUT` / `SPEC_HARDEN_CONTEXT`) > `~/.spec-harden.json`
 > built-in default**. So `--critic-model gpt-5.6-sol` is a one-off override; the file is the
 persistent default. `./install.sh` seeds this file for you from
 [`.spec-harden.example.json`](.spec-harden.example.json) if you don't already have one.
